@@ -43,7 +43,11 @@ after_initialize do
       scope.is_admin? && object.id == scope.user.id
     end
     def ip_address
-      object.ip_address.try(:to_s) if can_see_ip? else ''
+      if can_see_ip?
+        object.ip_address.try(:to_s) 
+      else
+        ''
+      end
     end
   
     def registration_ip_address
