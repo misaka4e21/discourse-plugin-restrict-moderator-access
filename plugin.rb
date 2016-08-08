@@ -40,7 +40,7 @@ after_initialize do
   end
   AdminUserSerializer.class_eval do
     def can_see_ip?
-      scope.is_admin? && object.id == scope.user.id
+      scope.is_admin?
     end
     def ip_address
       if can_see_ip?
