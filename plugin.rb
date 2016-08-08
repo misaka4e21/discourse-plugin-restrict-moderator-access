@@ -34,8 +34,8 @@ after_initialize do
     end
   end
   Guardian.class_eval do
-    def can_see_emails?(user)
-      (is_me?(user) || is_admin?) && @can_see_emails
+    def can_see_emails?
+      (is_me?(@user) || is_admin?) && @can_see_emails
     end
   end
   AdminUserSerializer.class_eval do
@@ -52,7 +52,7 @@ after_initialize do
   
     def registration_ip_address
       if can_see_ip?
-        object.ip_address.try(:to_s)
+        object.registration_ip_address.try(:to_s)
       else
         ''
       end
