@@ -28,7 +28,7 @@ after_initialize do
       return true if is_staff?
       can_edit?(user)
     end
-    
+
     def can_anonymize_user?(user)
       is_admin? && !user.nil? && !user.staff?
     end
@@ -38,4 +38,21 @@ after_initialize do
       (is_me?(user) || is_admin?) && @can_see_emails
     end
   end
+  AdminUserSerializer.class_eval do
+    def can_see_ip?
+      scope.is_admin? && object.id == scope.user.id
+    end
+    def ip_address
+      object.ip_address.try(:to_s) if can_see_ip? else ''
+    end
+  
+    def registration_ip_address
+      if can_see_ip? then
+        object.ip_address.try(:to_s)
+      else
+        ''
+      end
+    end
+
+
 end
