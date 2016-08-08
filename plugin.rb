@@ -5,6 +5,22 @@
 
 after_initialize do
   UserGuardian.module_eval do
+    def can_block_user?(user)
+      user && is_admin? && not(user.staff?)
+    end
+    def can_unblock_user?(user)
+      user && is_admin?
+     end
+     def can_delete_user?(user)
+       return false if user.nil? || user.admin?
+       if is_me?(user)
+         user.post_count <= 1
+       else
+         is_admin? && (user.first_post_created_at.nil? || user.first_post_created_at > SiteSetting.delete_user_max_post_age.to_i.days.ago)
+       end
+     end
+
+
     def can_edit_user?(user)
       is_me?(user) || is_admin?
     end
