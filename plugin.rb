@@ -51,6 +51,7 @@ after_initialize do
     def can_suspend?(user)
       user && is_admin? && user.regular?
     end
+    alias :can_deactivate? :can_suspend?
   end
   AdminUserSerializer.class_eval do
     def can_see_ip?
