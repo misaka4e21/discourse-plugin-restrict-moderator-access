@@ -5,12 +5,6 @@
 
 after_initialize do
   UserGuardian.module_eval do
-    def can_block_user?(user)
-      user && is_admin? && not(user.staff?)
-    end
-    def can_unblock_user?(user)
-      user && is_admin?
-     end
      def can_delete_user?(user)
        return false if user.nil? || user.admin?
        if is_me?(user)
