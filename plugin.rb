@@ -4,7 +4,6 @@
 # authors: netarmy <misaka4e21@gmail.com>
 
 after_initialize do
-
   UserGuardian.module_eval do
     def can_edit_user?(user)
       is_me?(user) || is_admin?
@@ -34,29 +33,9 @@ after_initialize do
       is_admin? && !user.nil? && !user.staff?
     end
   end
-
-  AdminUserListSerializer.class_eval do
-    def include_email?
-      (scope.is_admin? && object.id == scope.user.id)
-    end
-  end
-  AdminUserSerializer.class_eval do
-    def include_email?
-      (scope.is_admin? && object.id == scope.user.id)
-    end
-    def can_see_ip?
-      scope.is_admin? && object.id == scope.user.id
-    end
-    def ip_address
-      object.ip_address.try(:to_s) if can_see_ip? else '127.233.233.233'
-    end
-    
-    def registration_ip_address
-      if can_see_ip? then
-        object.ip_address.try(:to_s)
-      else
-        '127.233.233.233'
-      end
+  Guardian.class_eval do
+    def can_see_emails?(user)
+      (is_me?(user) || is_admin?) && @can_see_emails
     end
   end
 end
