@@ -53,6 +53,10 @@ after_initialize do
     def can_see_emails?
       (is_me?(@user) || is_admin?) && @can_see_emails
     end
+    
+    def can_suspend?(user)
+      user && is_admin? && user.regular?
+    end
   end
   AdminUserSerializer.class_eval do
     def can_see_ip?
