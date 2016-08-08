@@ -47,7 +47,7 @@ after_initialize do
     end
   
     def registration_ip_address
-      if can_see_ip? then
+      if can_see_ip?
         object.ip_address.try(:to_s)
       else
         ''
