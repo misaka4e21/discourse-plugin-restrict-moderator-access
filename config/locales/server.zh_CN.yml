@@ -1,0 +1,4 @@
+en:
+  site_settings:
+    restrict_access_visible_only_to_self_and_staff: "群组发帖可见性限制。"
+    restrict_access_visible_only_to_self_and_staff_group: "受限制的群组。群组成员所发的帖子只有工作人员和他们自己能看到。"
