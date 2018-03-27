@@ -74,11 +74,11 @@ after_initialize do
     end
   end
 
-  enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
-  group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
   PostGuardian.module_eval do
     alias :back_can_see_post? :can_see_post?
     def can_see_post?(post)
+      enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
+      group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
       if back_can_see_post?(post)
         if enabled && group && GroupUser.where(user_id: scope.user.id, group_id: group.id).exists?
           if scope.user.id == post.user.id || scope.user.is_staff?
@@ -98,6 +98,8 @@ after_initialize do
   TopicGuardian.module_eval do
     alias :back_can_see_topic? :can_see_topic?
     def can_see_topic?(topic)
+      enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
+      group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
       if back_can_see_topic?(topic)
         if enabled && group && GroupUser.where(user_id: scope.user.id, group_id: group.id).exists?
           if scope.user.id == topic.user.id || scope.user.is_staff?
