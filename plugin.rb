@@ -115,4 +115,24 @@ after_initialize do
       end
     end
   end
+
+  BasicTopicSerializer.class_eval do
+    def visible
+      if object.visible
+        enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
+        group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
+        if enabled && group && GroupUser.where(user_id: scope.user.id,, group_id: group.id).exists?
+          if scope.user.id == object.user.id || scope.user.is_staff?
+            true
+          else
+            false
+          end
+        else
+          true
+        end
+      else
+        false
+      end
+    end
+  end
 end
