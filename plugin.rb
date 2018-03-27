@@ -1,7 +1,7 @@
 # name: restrict-moderator-access
 # about: Restrict moderator access to user profiles and other private info
 # version: 0.1
-# authors: netarmy <misaka4e21@gmail.com>
+# authors: misaka4e21 <misaka4e21@gmail.com>
 
 after_initialize do
   UserGuardian.module_eval do
@@ -70,6 +70,44 @@ after_initialize do
         object.registration_ip_address.try(:to_s)
       else
         ''
+      end
+    end
+  end
+
+  enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
+  group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
+  PostGuardian.module_eval do
+    def can_see_post?(post)
+      if super(post)
+        if enabled && group && GroupUser.where(user_id: scope.user.id, group_id: group.id).exists?
+          if scope.user.id == post.user.id || scope.user.is_staff?
+            true # show for staff and the author
+          else
+            false # hide for others
+          end
+        else
+          true # not restricted
+        end
+      else
+        false # already hidden
+      end
+    end
+  end
+
+  TopicGuardian.module_eval do
+    def can_see_topic?(topic)
+      if super(topic)
+        if enabled && group && GroupUser.where(user_id: scope.user.id, group_id: group.id).exists?
+          if scope.user.id == topic.user.id || scope.user.is_staff?
+            true # show for staff and the author
+          else
+            false # hide for others
+          end
+        else
+          true # not restricted
+        end
+      else
+        false # already hidden
       end
     end
   end

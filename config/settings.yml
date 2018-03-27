@@ -1,0 +1,5 @@
+plugins:
+  restrict_access_visible_only_to_self_and_staff:
+    default: false
+  restrict_access_visible_only_to_self_and_staff_group:
+    default: ''
