@@ -80,8 +80,8 @@ after_initialize do
       enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
       group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
       if back_can_see_post?(post)
-        if (not @user.blank?) and enabled && group && GroupUser.where(user_id: post.user.id, group_id: group.id).exists?
-          if @user.id == post.user.id || @user.is_staff?
+        if enabled && group && GroupUser.where(user_id: post.user.id, group_id: group.id).exists?
+          if (not @user.blank?) and user.id == post.user.id || @user.staff?
             true # show for staff and the author
           else
             false # hide for others
@@ -97,12 +97,12 @@ after_initialize do
 
   TopicGuardian.module_eval do
     alias :back_can_see_topic? :can_see_topic?
-    def can_see_topic?(topic)
+    def can_see_topic?(topic, hide_deleted = true)
       enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
       group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
-      if back_can_see_topic?(topic)
+      if back_can_see_topic?(topic, hide_deleted)
         if enabled && group && GroupUser.where(user_id: topic.user.id, group_id: group.id).exists?
-          if (not @user.blank?) and @user.id == topic.user.id || @user.is_staff?
+          if (not @user.blank?) and @user.id == topic.user.id || @user.staff?
             true # show for staff and the author
           else
             false # hide for others
@@ -116,13 +116,13 @@ after_initialize do
     end
   end
 
-  BasicTopicSerializer.class_eval do
+  ListableTopicSerializer.class_eval do
     def visible
       if object.visible
         enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
         group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
         if enabled && group && GroupUser.where(user_id: object.user.id, group_id: group.id).exists?
-          if (not scope.user.blank?) and scope.user.id == object.user.id || scope.user.is_staff?
+          if (not scope.user.blank?) and scope.user.id == object.user.id
             true
           else
             false
@@ -132,6 +132,25 @@ after_initialize do
         end
       else
         false
+      end
+    end
+  end
+
+  TopicListSerializer.class_eval do
+    alias :back_topics :topics
+    def topics
+      enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
+      group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
+      self.back_topics.select do |object|
+        if enabled && group && GroupUser.where(user_id: object.user.id, group_id: group.id).exists?
+          if (not scope.user.blank?) and scope.user.id == object.user.id || scope.user.staff?
+            true
+          else
+            false
+          end
+        else
+          true
+        end
       end
     end
   end
