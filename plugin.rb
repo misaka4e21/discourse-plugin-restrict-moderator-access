@@ -80,7 +80,7 @@ after_initialize do
       enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
       group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
       if back_can_see_post?(post)
-        if enabled && group && GroupUser.where(user_id: @user.id, group_id: group.id).exists?
+        if (not @user.anonymous?) and enabled && group && GroupUser.where(user_id: post.user.id, group_id: group.id).exists?
           if @user.id == post.user.id || @user.is_staff?
             true # show for staff and the author
           else
@@ -101,8 +101,8 @@ after_initialize do
       enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
       group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
       if back_can_see_topic?(topic)
-        if enabled && group && GroupUser.where(user_id: @user.id, group_id: group.id).exists?
-          if @user.id == topic.user.id || @user.is_staff?
+        if enabled && group && GroupUser.where(user_id: topic.user.id, group_id: group.id).exists?
+          if (not @user.anonymous?) and @user.id == topic.user.id || @user.is_staff?
             true # show for staff and the author
           else
             false # hide for others
@@ -121,8 +121,8 @@ after_initialize do
       if object.visible
         enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
         group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
-        if enabled && group && GroupUser.where(user_id: scope.user.id,, group_id: group.id).exists?
-          if scope.user.id == object.user.id || scope.user.is_staff?
+        if enabled && group && GroupUser.where(user_id: object.user.id, group_id: group.id).exists?
+          if (not scope.user.anonymous?) and scope.user.id == object.user.id || scope.user.is_staff?
             true
           else
             false
