@@ -3,6 +3,27 @@
 # version: 0.1
 # authors: misaka4e21 <misaka4e21@gmail.com>
 
+module ::Restriction
+  module Hidden
+    def self.restrict_hidden(user, object)
+      enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
+      group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
+      if enabled && group && GroupUser.where(user_id: object.user.id, group_id: group.id).exists?
+        if (not user.blank?) and (user.id == object.user.id || user.staff?)
+          true # show for staff and the author
+        else
+          false # hide for others
+        end
+      else
+        true # not restricted
+      end
+    end
+  end
+
+
+end
+
+
 after_initialize do
   UserGuardian.module_eval do
      def can_delete_user?(user)
@@ -80,15 +101,7 @@ after_initialize do
       enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
       group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
       if back_can_see_post?(post)
-        if enabled && group && GroupUser.where(user_id: post.user.id, group_id: group.id).exists?
-          if (not @user.blank?) and user.id == post.user.id || @user.staff?
-            true # show for staff and the author
-          else
-            false # hide for others
-          end
-        else
-          true # not restricted
-        end
+        ::Restriction::Hidden.restrict_hidden(@user, post)
       else
         false # already hidden
       end
@@ -101,15 +114,7 @@ after_initialize do
       enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
       group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
       if back_can_see_topic?(topic, hide_deleted)
-        if enabled && group && GroupUser.where(user_id: topic.user.id, group_id: group.id).exists?
-          if (not @user.blank?) and @user.id == topic.user.id || @user.staff?
-            true # show for staff and the author
-          else
-            false # hide for others
-          end
-        else
-          true # not restricted
-        end
+        ::Restriction::Hidden.restrict_hidden(@user, topic)
       else
         false # already hidden
       end
@@ -119,17 +124,7 @@ after_initialize do
   ListableTopicSerializer.class_eval do
     def visible
       if object.visible
-        enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
-        group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
-        if enabled && group && GroupUser.where(user_id: object.user.id, group_id: group.id).exists?
-          if (not scope.user.blank?) and scope.user.id == object.user.id
-            true
-          else
-            false
-          end
-        else
-          true
-        end
+        ::Restriction::Hidden.restrict_hidden(scope.user, object)
       else
         false
       end
@@ -139,19 +134,42 @@ after_initialize do
   TopicListSerializer.class_eval do
     alias :back_topics :topics
     def topics
-      enabled =  SiteSetting.restrict_access_visible_only_to_self_and_staff
-      group = Group.find_by("lower(name) = ?", SiteSetting.restrict_access_visible_only_to_self_and_staff_group.downcase)
       self.back_topics.select do |object|
-        if enabled && group && GroupUser.where(user_id: object.user.id, group_id: group.id).exists?
-          if (not scope.user.blank?) and scope.user.id == object.user.id || scope.user.staff?
-            true
-          else
-            false
-          end
-        else
-          true
-        end
+        ::Restriction::Hidden.restrict_hidden(scope.user, object)
       end
     end
   end
+
+  add_to_serializer(:post, :hidden) do
+    if object.hidden
+      true
+    else
+      not ::Restriction::Hidden.restrict_hidden(scope.user, object)
+    end
+  end
+
+#  PostStreamSerializerMixin.module_eval do
+#    def posts
+#      @posts ||= begin
+#        (object.posts||[]).select {|object|
+#          ::Restriction::Hidden.restrict_hidden(scope.user, object)
+#        }.map do |post|
+#          post.topic = object.topic
+#
+#          serializer = PostSerializer.new(post, scope: scope, root: false)
+#          serializer.add_raw = true if @options[:include_raw]
+#          serializer.topic_view = object
+#
+#          serializer.as_json
+#        end
+#      end
+#    end
+#  end
+
+  Post.class_eval do
+    def hidden
+      @hidden || (not ::Restriction::Hidden.restrict_hidden(scope.user, object))
+    end
+  end
+
 end
